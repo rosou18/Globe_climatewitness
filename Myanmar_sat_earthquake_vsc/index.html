@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DIN+Condensed:wght@400;700&family=Yu+Gothic:wght@400;500&display=swap');
+
+body {
+margin: 0;
+padding: 0;
+background: #000;
+overflow: hidden;
+font-family: 'Yu Gothic', sans-serif;
+}
+
+.title {
+font-family: 'DIN Condensed', sans-serif;
+font-size: 32px;
+color: white;
+position: absolute;
+bottom: 80px;
+left: 40px;
+z-index: 10;
+font-weight: 400;
+background: #000;
+padding: 12px 24px;
+}
+
+.subtitle {
+font-family: 'Yu Gothic', sans-serif;
+font-size: 14px;
+color: #999;
+position: absolute;
+bottom: 40px;
+left: 40px;
+z-index: 10;
+background: #000;
+padding: 8px 16px;
+}
+</style>
+</head>
+<body>
+<div class="title">Myanmar Earthquake Damage</div>
+<div class="subtitle">7.7 Magnitude - March 28, 2025</div>
+<script>
+let beforeImg, afterImg;
+let revealRadius = 120;
+let imgScale = 1;
+let imgOffsetX = 0;
+let imgOffsetY = 0;
+
+function preload() {
+beforeImg = loadImage('sat_before.png');
+afterImg = loadImage('sat_after.png');
+}
+
+function setup() {
+createCanvas(windowWidth, windowHeight);
+noCursor();
+}
+
+function draw() {
+background(0);
+if (beforeImg && afterImg) {
+// Calculate scaling to fit image without stretching
+calculateImageFit();
+
+// Draw before image (fitted, not stretched)
+image(beforeImg, imgOffsetX, imgOffsetY, beforeImg.width * imgScale, beforeImg.height * imgScale);
+
+// Only reveal after image around mouse position
+if (mouseX >= imgOffsetX && mouseX <= imgOffsetX + beforeImg.width * imgScale &&
+mouseY >= imgOffsetY && mouseY <= imgOffsetY + beforeImg.height * imgScale) {
+// Create simple circular mask
+let mask = createGraphics(beforeImg.width * imgScale, beforeImg.height * imgScale);
+mask.fill(255);
+mask.circle(mouseX - imgOffsetX, mouseY - imgOffsetY, revealRadius * 2);
+
+// Apply mask to after image
+let maskedAfter = afterImg.get();
+maskedAfter.resize(beforeImg.width * imgScale, beforeImg.height * imgScale);
+maskedAfter.mask(mask);
+
+// Draw the masked after image
+image(maskedAfter, imgOffsetX, imgOffsetY);
+}
+
+// Draw simple cursor circle
+drawCursor();
+} else {
+// Loading state
+fill(255, 150);
+textAlign(CENTER, CENTER);
+textSize(18);
+text("Loading images...", width/2, height/2);
+}
+}
+
+function calculateImageFit() {
+if (!beforeImg) return;
+let imgAspect = beforeImg.width / beforeImg.height;
+let canvasAspect = width / height;
+
+if (imgAspect > canvasAspect) {
+// Image is wider - fit to width
+imgScale = width / beforeImg.width;
+imgOffsetX = 0;
+imgOffsetY = (height - beforeImg.height * imgScale) / 2;
+} else {
+// Image is taller - fit to height
+imgScale = height / beforeImg.height;
+imgOffsetX = (width - beforeImg.width * imgScale) / 2;
+imgOffsetY = 0;
+}
+}
+
+function drawCursor() {
+// No visible cursor - just the reveal circle effect
+}
+
+function windowResized() {
+resizeCanvas(windowWidth, windowHeight);
+}
+
+// Scroll to adjust reveal radius
+function mouseWheel(event) {
+revealRadius = constrain(revealRadius - event.delta * 0.1, 20, 200);
+return false;
+}
+</script>
+</body>
+</html>
