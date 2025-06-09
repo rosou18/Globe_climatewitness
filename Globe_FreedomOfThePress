@@ -1,0 +1,496 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Press Freedom Index</title>
+    <link href="https://fonts.googleapis.com/css2?family=DIN+Condensed&family=Bebas+Neue&family=Yu+Gothic:wght@400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #ffffff;
+            font-family: 'Yu Gothic', sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #globeViz {
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .title {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            color: #ffffff;
+            letter-spacing: 2px;
+            opacity: 0;
+        }
+
+        .subtitle {
+            position: absolute;
+            top: 75px;
+            left: 40px;
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 14px;
+            color: #cccccc;
+            letter-spacing: 1px;
+            opacity: 0;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #ffffff;
+            padding: 20px;
+            opacity: 0;
+            min-width: 280px;
+        }
+
+        .legend-title {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 12px;
+            color: #ffffff;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 15px;
+            margin-right: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend-text {
+            font-family: 'Yu Gothic', sans-serif;
+            font-size: 11px;
+            color: #ffffff;
+        }
+
+        .legend-range {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 10px;
+            color: #cccccc;
+            margin-left: auto;
+        }
+
+        .data-info {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            font-family: 'Yu Gothic', sans-serif;
+            font-size: 11px;
+            color: #cccccc;
+            text-align: right;
+            opacity: 0;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.95);
+            color: #ffffff;
+            padding: 40px;
+            border: 1px solid #ffffff;
+        }
+
+        .loading-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="globeViz"></div>
+        
+        <div class="overlay">
+            <h1 class="title">WORLD PRESS FREEDOM INDEX</h1>
+            <p class="subtitle">2025 Reporters Without Borders Rankings</p>
+            
+            <div class="legend">
+                <div class="legend-title">Press Freedom Categories</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #81c784;"></div>
+                    <div class="legend-text">Good</div>
+                    <div class="legend-range">85-100</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #aed581;"></div>
+                    <div class="legend-text">Satisfactory</div>
+                    <div class="legend-range">70-84</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ffb74d;"></div>
+                    <div class="legend-text">Problematic</div>
+                    <div class="legend-range">55-69</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ff8a50;"></div>
+                    <div class="legend-text">Difficult</div>
+                    <div class="legend-range">40-54</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e55039;"></div>
+                    <div class="legend-text">Very Serious</div>
+                    <div class="legend-range">20-39</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #b71c1c;"></div>
+                    <div class="legend-text">Critical</div>
+                    <div class="legend-range">0-19</div>
+                </div>
+            </div>
+            
+            <div class="data-info">
+                <div>Source: Reporters Without Borders (RSF)</div>
+                <div>2025 World Press Freedom Index</div>
+                <div>180 countries and territories</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="loading-title">LOADING PRESS FREEDOM DATA</div>
+    </div>
+
+    <script>
+        // World Press Freedom Index scores from 2025
+        const freedomData = {
+            'Norway': 92.31,
+            'Estonia': 89.46,
+            'Netherlands': 88.64,
+            'Sweden': 88.13,
+            'Finland': 87.18,
+            'Denmark': 86.93,
+            'Ireland': 86.92,
+            'Portugal': 84.26,
+            'Switzerland': 83.98,
+            'Czech Republic': 83.96,
+            'Czechia': 83.96,
+            'Germany': 83.85,
+            'Liechtenstein': 83.42,
+            'Luxembourg': 83.04,
+            'Lithuania': 82.27,
+            'Latvia': 81.82,
+            'New Zealand': 81.37,
+            'Iceland': 81.36,
+            'Belgium': 80.12,
+            'Trinidad and Tobago': 79.71,
+            'United Kingdom': 78.89,
+            'Canada': 78.75,
+            'Austria': 78.12,
+            'Spain': 77.35,
+            'Taiwan': 77.04,
+            'France': 76.62,
+            'Jamaica': 75.83,
+            'South Africa': 75.71,
+            'Namibia': 75.35,
+            'Australia': 75.15,
+            'Cape Verde': 74.98,
+            'Cabo Verde': 74.98,
+            'Poland': 74.79,
+            'Suriname': 74.49,
+            'Slovenia': 74.06,
+            'Armenia': 73.96,
+            'Moldova': 73.36,
+            'Costa Rica': 73.09,
+            'Montenegro': 72.83,
+            'Slovakia': 72.83,
+            'Timor-Leste': 71.79,
+            'East Timor': 71.79,
+            'Fiji': 71.20,
+            'Gabon': 70.65,
+            'North Macedonia': 70.44,
+            'Dominican Republic': 69.87,
+            'Samoa': 69.28,
+            'Seychelles': 68.56,
+            'Tonga': 68.39,
+            'Belize': 68.32,
+            'Italy': 68.01,
+            'Mauritania': 67.52,
+            'Mauritius': 67.31,
+            'Ghana': 67.13,
+            'Panama': 66.75,
+            'Liberia': 66.75,
+            'Romania': 66.42,
+            'Sierra Leone': 66.36,
+            'United States': 65.49,
+            'United States of America': 65.49,
+            'Gambia': 65.49,
+            'Uruguay': 65.18,
+            'Croatia': 64.20,
+            'South Korea': 64.06,
+            'Ukraine': 63.93,
+            'Brazil': 63.8,
+            'Ivory Coast': 63.69,
+            'Cote d\'Ivoire': 63.69,
+            'Andorra': 63.30,
+            'Japan': 63.14,
+            'Malta': 62.96,
+            'Hungary': 62.82,
+            'Chile': 62.25,
+            'Bulgaria': 60.78,
+            'Congo': 60.58,
+            'Central African Republic': 60.15,
+            'Guyana': 60.12,
+            'Senegal': 59.43,
+            'Comoros': 59.27,
+            'Malawi': 59.20,
+            'Cyprus': 59.04,
+            'Papua New Guinea': 58.35,
+            'Qatar': 58.25,
+            'Albania': 58.18,
+            'Botswana': 57.64,
+            'Zambia': 57.33,
+            'Niger': 57.05,
+            'Paraguay': 56.84,
+            'Thailand': 56.72,
+            'Bosnia and Herzegovina': 56.33,
+            'Argentina': 56.14,
+            'Malaysia': 56.09,
+            'Greece': 55.37,
+            'Nepal': 55.20,
+            'Northern Cyprus': 54.84,
+            'Benin': 54.60,
+            'Bolivia': 54.09,
+            'Ecuador': 53.76,
+            'Tanzania': 53.68,
+            'Serbia': 53.55,
+            'Brunei': 53.47,
+            'Eswatini': 52.86,
+            'Kosovo': 52.73,
+            'Angola': 52.67,
+            'Mozambique': 52.63,
+            'Mongolia': 52.57,
+            'Guinea': 52.53,
+            'Maldives': 52.46,
+            'Burkina Faso': 52.25,
+            'Zimbabwe': 52.10,
+            'Lesotho': 52.07,
+            'Chad': 51.89,
+            'South Sudan': 51.63,
+            'Guinea-Bissau': 51.36,
+            'Haiti': 51.06,
+            'Israel': 51.06,
+            'Madagascar': 50.80,
+            'Georgia': 50.53,
+            'Colombia': 49.8,
+            'Philippines': 49.57,
+            'Kenya': 49.41,
+            'Equatorial Guinea': 48.68,
+            'Mali': 48.23,
+            'Morocco': 48.04,
+            'Togo': 48.03,
+            'Nigeria': 46.81,
+            'Singapore': 45.78,
+            'Mexico': 45.55,
+            'Burundi': 45.44,
+            'Algeria': 44.64,
+            'Indonesia': 44.13,
+            'Kuwait': 44.06,
+            'Tunisia': 43.48,
+            'Peru': 42.88,
+            'Cameroon': 42.75,
+            'Lebanon': 42.62,
+            'Democratic Republic of the Congo': 42.31,
+            'DR Congo': 42.31,
+            'Dem. Rep. Congo': 42.31,
+            'Congo (Kinshasa)': 42.31,
+            'Oman': 42.29,
+            'El Salvador': 41.19,
+            'Somalia': 40.49,
+            'Libya': 40.42,
+            'Guatemala': 40.32,
+            'Sri Lanka': 39.93,
+            'Hong Kong': 39.86,
+            'Kazakhstan': 39.34,
+            'Honduras': 38.51,
+            'Uganda': 37.61,
+            'Kyrgyzstan': 37.46,
+            'Ethiopia': 36.92,
+            'Rwanda': 35.84,
+            'Jordan': 35.25,
+            'Uzbekistan': 35.24,
+            'Bangladesh': 33.71,
+            'Laos': 33.22,
+            'India': 32.96,
+            'Bhutan': 32.62,
+            'Tajikistan': 32.21,
+            'Yemen': 31.45,
+            'Iraq': 30.69,
+            'Sudan': 30.34,
+            'Bahrain': 30.24,
+            'Pakistan': 29.62,
+            'Turkey': 29.40,
+            'Venezuela': 29.21,
+            'Cambodia': 28.18,
+            'Saudi Arabia': 27.94,
+            'Palestine': 27.41,
+            'United Arab Emirates': 26.91,
+            'Cuba': 26.03,
+            'Belarus': 25.73,
+            'Azerbaijan': 25.47,
+            'Djibouti': 25.36,
+            'Myanmar': 25.32,
+            'Egypt': 24.74,
+            'Russia': 24.57,
+            'Nicaragua': 22.83,
+            'Vietnam': 19.74,
+            'Turkmenistan': 19.14,
+            'Afghanistan': 17.88,
+            'Iran': 16.22,
+            'Syria': 15.82,
+            'China': 14.80,
+            'North Korea': 12.64,
+            'Eritrea': 11.32
+        };
+
+        const containerWidth = window.innerWidth;
+        const containerHeight = window.innerHeight;
+
+        // World Press Freedom Index color categories (soft green-to-red gradient, no pink)
+        const getColorByScore = (score) => {
+            if (score >= 85) return '#81c784'; // Good: Soft Green
+            if (score >= 70) return '#aed581'; // Satisfactory: Light Green
+            if (score >= 55) return '#ffb74d'; // Problematic: Soft Orange
+            if (score >= 40) return '#ff8a50'; // Difficult: Orange-Red
+            if (score >= 20) return '#e55039'; // Very serious: Pure Red
+            return '#b71c1c'; // Critical: Deep Red (worst cases)
+        };
+
+        // Function to get category name
+        const getCategoryName = (score) => {
+            if (score >= 85) return 'Good';
+            if (score >= 70) return 'Satisfactory';
+            if (score >= 55) return 'Problematic';
+            if (score >= 40) return 'Difficult';
+            if (score >= 20) return 'Very Serious';
+            return 'Critical';
+        };
+
+        // Function to get freedom score
+        const getFreedomScore = (feat) => {
+            const countryName = feat.properties.NAME || feat.properties.ADMIN;
+            return freedomData[countryName] || 0;
+        };
+
+        // Load country data and create globe
+        fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+            .then(res => res.json())
+            .then(countries => {
+                // Create globe
+                const world = Globe()
+                    .width(containerWidth)
+                    .height(containerHeight)
+                    (document.getElementById('globeViz'))
+                    .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+                    .polygonsData(countries.features)
+                    .polygonAltitude(0.02)
+                    .polygonCapColor(feat => {
+                        const value = getFreedomScore(feat);
+                        return value > 0 ? getColorByScore(value) : '#333333';
+                    })
+                    .polygonSideColor(() => 'rgba(0, 0, 0, 0.15)')
+                    .polygonStrokeColor(() => 'rgba(0, 0, 0, 0)');
+
+                // Add interactions
+                world.polygonLabel(({ properties: d }) => {
+                    const score = getFreedomScore({ properties: d });
+                    const category = getCategoryName(score);
+                    return `
+                        <div style="font-family: 'Yu Gothic', sans-serif; font-size: 12px; color: #ffffff; background: rgba(0,0,0,0.9); padding: 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">
+                            <div style="font-weight: bold; margin-bottom: 4px;">${d.NAME || d.ADMIN}</div>
+                            <div style="color: #cccccc;">Press Freedom Score: <span style="color: #ffffff; font-weight: bold;">${score.toFixed(1)}/100</span></div>
+                            <div style="color: ${getColorByScore(score)}; font-weight: bold; margin-top: 4px;">${category}</div>
+                        </div>
+                    `;
+                })
+                .onPolygonHover(hoverD => world
+                    .polygonAltitude(d => d === hoverD ? 0.12 : 0.02)
+                    .polygonCapColor(d => {
+                        const value = getFreedomScore(d);
+                        if (d === hoverD) return '#ffffff';
+                        return value > 0 ? getColorByScore(value) : '#333333';
+                    })
+                )
+                .polygonsTransitionDuration(300);
+
+                // Auto-rotation
+                world.controls().autoRotate = true;
+                world.controls().autoRotateSpeed = 0.3;
+
+                // Hide loading and show content
+                document.getElementById('loading').style.display = 'none';
+                animateIntro();
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerHTML = '<div class="loading-title">ERROR LOADING DATA</div>';
+            });
+
+        // Intro animation using GSAP
+        function animateIntro() {
+            const tl = gsap.timeline();
+            
+            tl.to('.title', { opacity: 1, duration: 1.5, ease: 'power2.out' })
+              .to('.subtitle', { opacity: 1, duration: 1, ease: 'power2.out' }, '-=1')
+              .to('.legend', { opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.5')
+              .to('.data-info', { opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.5');
+        }
+
+        // Responsive handling
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+            if (window.globe) {
+                world.width(newWidth).height(newHeight);
+            }
+        });
+    </script>
+</body>
+</html>
