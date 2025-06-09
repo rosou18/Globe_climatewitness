@@ -1,0 +1,503 @@
+
+// I acknowledge the use of Claude to improve this code
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Myanmar Satellite Timeline</title>
+    <link href="https://fonts.googleapis.com/css2?family=DIN+Condensed:wght@400;700&family=Bebas+Neue&family=Yu+Gothic:wght@400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #ffffff;
+            color: #000000;
+            font-family: 'Yu Gothic', sans-serif;
+            height: 400vh;
+            overflow-x: hidden;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            text-align: center;
+        }
+
+        .title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            color: #000000;
+            margin: 0 0 5px 0;
+            letter-spacing: 2px;
+            font-weight: normal;
+        }
+
+        .current-year {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 28px;
+            color: #000000;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .container {
+            position: fixed;
+            top: 120px;
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - 260px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-container {
+            position: relative;
+            width: 70vw;
+            height: 55vh;
+            max-width: 900px;
+            max-height: 550px;
+        }
+
+        .satellite-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            filter: contrast(1.1) brightness(1.05);
+        }
+
+        .progress-container {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            max-width: 700px;
+            background: transparent;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            position: relative;
+            border-radius: 4px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #000000;
+            width: 0%;
+            transition: width 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .timeline-years {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 18px;
+            color: #333333;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            font-weight: 700;
+        }
+
+        .caption {
+            position: fixed;
+            bottom: 90px;
+            left: 50px;
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 12px;
+            color: #666666;
+            z-index: 200;
+            text-align: left;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .timeline-switch {
+            position: fixed;
+            bottom: 90px;
+            right: 50px;
+            background: transparent;
+            border: none;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 200;
+        }
+
+        .timeline-switch:hover {
+            transform: scale(1.1);
+        }
+
+        .timeline-switch:hover .arrow {
+            border-left-color: #666666;
+        }
+
+        .arrow {
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 22px solid #000000;
+            transition: all 0.3s ease;
+            margin-left: 3px;
+        }
+
+        .toggle-label {
+            position: fixed;
+            bottom: 50px;
+            right: 45px;
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 10px;
+            color: #999999;
+            z-index: 200;
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 200;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .loading-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .loading-count {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 16px;
+            color: #666666;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 28px;
+            }
+            
+            .current-year {
+                font-size: 22px;
+            }
+            
+            .image-container {
+                width: 90vw;
+                height: 60vh;
+            }
+            
+            .timeline-switch {
+                width: 40px;
+                height: 40px;
+                right: 30px;
+            }
+            
+            .toggle-label {
+                right: 25px;
+                font-size: 9px;
+            }
+            
+            .arrow {
+                border-top: 12px solid transparent;
+                border-bottom: 12px solid transparent;
+                border-left: 18px solid #000000;
+            }
+            
+            .progress-container {
+                width: 90%;
+                padding: 20px;
+            }
+            
+            .timeline-years {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="info-panel">
+        <div class="title" id="titleText">Mandalay, Myanmar</div>
+        <div class="current-year" id="currentYear">1984</div>
+    </div>
+
+    <div class="container">
+        <div class="image-container" id="imageContainer">
+            <!-- Images will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="timeline-years">
+            <span>1984</span>
+            <span>2022</span>
+        </div>
+    </div>
+
+    <div class="caption" id="caption">Scroll through time</div>
+    
+    <button class="timeline-switch" id="timelineSwitch">
+        <div class="arrow"></div>
+    </button>
+    <div class="toggle-label" id="toggleLabel">Switch Location</div>
+
+    <div class="loading" id="loading" style="display: none;">
+        <div class="loading-title">LOADING IMAGES</div>
+        <div class="loading-count" id="loadingCount">0/39 loaded</div>
+    </div>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        const totalImages = 39;
+        const startYear = 1984;
+        const endYear = 2022;
+        const yearRange = endYear - startYear;
+        
+        let imagesLoaded = 0;
+        let currentImageIndex = 0;
+        let currentTimeline = 'myanmar';
+        const images = [];
+        const vegasImages = [];
+        
+        const elements = {
+            container: document.getElementById('imageContainer'),
+            title: document.getElementById('titleText'),
+            currentYear: document.getElementById('currentYear'),
+            progress: document.getElementById('progressFill'),
+            loading: document.getElementById('loading'),
+            loadingCount: document.getElementById('loadingCount'),
+            timelineSwitch: document.getElementById('timelineSwitch'),
+            toggleLabel: document.getElementById('toggleLabel')
+        };
+
+        const myanmarData = [];
+        for (let i = 1; i <= totalImages; i++) {
+            const progress = (i - 1) / (totalImages - 1);
+            const year = Math.round(startYear + (yearRange * progress));
+            myanmarData.push({
+                filename: `myanmar${i}.png`,
+                year: year,
+                index: i - 1
+            });
+        }
+
+        const vegasData = [];
+        const vegasTotal = 42;
+        for (let i = 4; i <= 45; i++) {
+            const imageIndex = i - 4;
+            const progress = imageIndex / (vegasTotal - 1);
+            const year = Math.round(startYear + (yearRange * progress));
+            vegasData.push({
+                filename: `vegas${i}.png`,
+                year: year,
+                index: imageIndex
+            });
+        }
+
+        let timelineData = myanmarData;
+
+        function loadImages() {
+            const currentData = currentTimeline === 'myanmar' ? myanmarData : vegasData;
+            const currentImagesArray = currentTimeline === 'myanmar' ? images : vegasImages;
+            const totalToLoad = currentData.length;
+            
+            elements.loadingCount.textContent = `0/${totalToLoad} loaded`;
+            
+            currentData.forEach((data, index) => {
+                if (currentImagesArray[index]) return;
+                
+                const img = document.createElement('img');
+                img.src = data.filename;
+                img.className = 'satellite-image';
+                img.alt = `${currentTimeline === 'myanmar' ? 'Myanmar' : 'Vegas'} ${data.year}`;
+                img.style.opacity = '0';
+                
+                img.onload = () => {
+                    imagesLoaded++;
+                    if (imagesLoaded === 1 && currentTimeline === 'myanmar') {
+                        showImage(0);
+                    }
+                };
+                
+                img.onerror = () => {
+                    imagesLoaded++;
+                    console.error(`Failed to load: ${data.filename}`);
+                };
+                
+                currentImagesArray.push(img);
+                elements.container.appendChild(img);
+            });
+        }
+
+        function showImage(index) {
+            const currentImagesArray = currentTimeline === 'myanmar' ? images : vegasImages;
+            
+            if (index === currentImageIndex) return;
+            
+            currentImagesArray.forEach(img => {
+                img.style.opacity = '0';
+                img.style.transform = 'translateX(0)';
+            });
+            
+            if (currentImagesArray[index]) {
+                currentImagesArray[index].style.opacity = '1';
+            }
+            
+            currentImageIndex = index;
+            updateInfo(index);
+        }
+
+        function updateInfo(index) {
+            const currentData = currentTimeline === 'myanmar' ? myanmarData : vegasData;
+            const data = currentData[index];
+            if (!data) return;
+            
+            const cityName = currentTimeline === 'myanmar' ? 'Mandalay, Myanmar' : 'Las Vegas, USA';
+            elements.title.textContent = cityName;
+            elements.currentYear.textContent = data.year;
+            
+            const progress = (index / (currentData.length - 1)) * 100;
+            elements.progress.style.width = `${progress}%`;
+        }
+
+        function switchTimeline() {
+            const newTimeline = currentTimeline === 'myanmar' ? 'vegas' : 'myanmar';
+            const currentImagesArray = currentTimeline === 'myanmar' ? images : vegasImages;
+            const targetImagesArray = newTimeline === 'myanmar' ? images : vegasImages;
+            
+            gsap.to(currentImagesArray, {
+                x: '-100vw',
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut"
+            });
+            
+            currentTimeline = newTimeline;
+            timelineData = currentTimeline === 'myanmar' ? myanmarData : vegasData;
+            currentImageIndex = 0;
+            
+            gsap.to(elements.timelineSwitch, {
+                scale: 0.9,
+                duration: 0.1,
+                yoyo: true,
+                repeat: 1,
+                ease: "power2.out"
+            });
+            
+            gsap.to([elements.title, elements.currentYear], {
+                x: -50,
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.out",
+                onComplete: () => {
+                    const cityName = currentTimeline === 'myanmar' ? 'Mandalay, Myanmar' : 'Las Vegas, USA';
+                    elements.title.textContent = cityName;
+                    elements.currentYear.textContent = timelineData[0].year;
+                    
+                    gsap.to([elements.title, elements.currentYear], {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                }
+            });
+            
+            if (targetImagesArray.length === 0) {
+                imagesLoaded = 0;
+                loadImages();
+            }
+            
+            if (targetImagesArray[0]) {
+                gsap.set(targetImagesArray[0], {
+                    x: '100vw',
+                    opacity: 1
+                });
+                
+                setTimeout(() => {
+                    gsap.to(targetImagesArray[0], {
+                        x: 0,
+                        duration: 0.8,
+                        ease: "power2.inOut"
+                    });
+                    
+                    updateInfo(0);
+                }, 300);
+            }
+            
+            gsap.to(window, {
+                scrollTo: 0,
+                duration: 0.8,
+                ease: "power2.out"
+            });
+            
+            setTimeout(() => {
+                ScrollTrigger.refresh();
+            }, 1000);
+        }
+
+        function initScrollTrigger() {
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: (self) => {
+                    const progress = self.progress;
+                    const currentData = currentTimeline === 'myanmar' ? myanmarData : vegasData;
+                    const imageIndex = Math.floor(progress * currentData.length);
+                    const clampedIndex = Math.max(0, Math.min(currentData.length - 1, imageIndex));
+                    
+                    showImage(clampedIndex);
+                }
+            });
+        }
+
+        loadImages();
+        elements.timelineSwitch.addEventListener('click', switchTimeline);
+        gsap.set("body", { opacity: 1 });
+        
+        setTimeout(() => {
+            initScrollTrigger();
+        }, 500);
+    </script>
+</body>
+</html>
