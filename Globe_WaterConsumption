@@ -1,0 +1,461 @@
+// I acknowledge the use of Claude to improve this code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Water Consumption</title>
+    <link href="https://fonts.googleapis.com/css2?family=DIN+Condensed&family=Bebas+Neue&family=Yu+Gothic:wght@400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #ffffff;
+            font-family: 'Yu Gothic', sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #globeViz {
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .title {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            color: #ffffff;
+            letter-spacing: 2px;
+            opacity: 0;
+        }
+
+        .subtitle {
+            position: absolute;
+            top: 75px;
+            left: 40px;
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 14px;
+            color: #cccccc;
+            letter-spacing: 1px;
+            opacity: 0;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #ffffff;
+            padding: 20px;
+            opacity: 0;
+        }
+
+        .legend-title {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 12px;
+            color: #ffffff;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .legend-gradient {
+            width: 250px;
+            height: 20px;
+            background: linear-gradient(to right, 
+                #08519c 0%,
+                #3182bd 20%,
+                #6baed6 40%,
+                #9ecae1 60%,
+                #c6dbef 80%,
+                #eff3ff 100%);
+            border: 1px solid #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 250px;
+            font-family: 'Yu Gothic', sans-serif;
+            font-size: 10px;
+            color: #ffffff;
+        }
+
+        .data-info {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            font-family: 'Yu Gothic', sans-serif;
+            font-size: 11px;
+            color: #cccccc;
+            text-align: right;
+            opacity: 0;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.95);
+            color: #ffffff;
+            padding: 40px;
+            border: 1px solid #ffffff;
+        }
+
+        .loading-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="globeViz"></div>
+        
+        <div class="overlay">
+            <h1 class="title">GLOBAL WATER CONSUMPTION</h1>
+            <p class="subtitle">Billion cubic meters per year</p>
+            
+            <div class="legend">
+                <div class="legend-title">CONSUMPTION LEVELS</div>
+                <div class="legend-gradient"></div>
+                <div class="legend-labels">
+                    <span>0</span>
+                    <span>50</span>
+                    <span>200</span>
+                    <span>400</span>
+                    <span>600</span>
+                    <span>760+</span>
+                </div>
+            </div>
+            
+            <div class="data-info">
+                <div>Source: UN, UNESCO, FAO</div>
+                <div>Global Total: 3,997,039,700,000 m³</div>
+                <div>Agriculture: 70% | Industry: 20% | Domestic: 10%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="loading-title">LOADING WATER DATA</div>
+    </div>
+
+    <script>
+        // Water consumption data (in billion cubic meters) - Fixed Congo and Sudan data
+        const waterData = {
+            'China': 598.1,
+            'India': 761,
+            'United States': 444.3,
+            'United States of America': 444.3,
+            'Pakistan': 183.5,
+            'Indonesia': 222.6,
+            'Iran': 93.3,
+            'Mexico': 86.58,
+            'Philippines': 85.14,
+            'Vietnam': 82.03,
+            'Japan': 81.45,
+            'Egypt': 77.5,
+            'Russia': 69.5,
+            'Brazil': 63.5,
+            'Turkey': 58.95,
+            'Thailand': 57.31,
+            'Uzbekistan': 54.56,
+            'Afghanistan': 20.28,
+            'Argentina': 37.78,
+            'Bangladesh': 35.87,
+            'Canada': 35.73,
+            'Chile': 35.43,
+            'Italy': 34.19,
+            'Myanmar': 33.23,
+            'Spain': 32.85,
+            'France': 29.37,
+            'South Korea': 29.2,
+            'Turkmenistan': 27.95,
+            'Sudan': 26.93,
+            'Germany': 25.33,
+            'Saudi Arabia': 23.35,
+            'Kazakhstan': 22.77,
+            'Venezuela': 22.63,
+            'Australia': 16.13,
+            'South Africa': 15.5,
+            'Syria': 16.76,
+            'Peru': 13.66,
+            'Madagascar': 13.56,
+            'Sri Lanka': 12.95,
+            'Azerbaijan': 12.78,
+            'Nigeria': 12.47,
+            'Colombia': 11.77,
+            'Tajikistan': 11.49,
+            'Malaysia': 11.2,
+            'Poland': 10.58,
+            'Ethiopia': 10.55,
+            'Morocco': 10.43,
+            'Algeria': 9.978,
+            'Ecuador': 9.918,
+            'Ukraine': 9.862,
+            'Nepal': 9.497,
+            'Greece': 9.63,
+            'Portugal': 9.151,
+            'Netherlands': 8.919,
+            'North Korea': 8.658,
+            'United Kingdom': 8.42,
+            'Kyrgyzstan': 8.007,
+            'Dominican Republic': 7.156,
+            'Cuba': 6.959,
+            'Finland': 6.562,
+            'Romania': 6.374,
+            'Belgium': 6.005,
+            'Bulgaria': 5.629,
+            'Libya': 5.83,
+            'Mali': 5.186,
+            'Tanzania': 5.184,
+            'New Zealand': 5.201,
+            'Hungary': 5.051,
+            'Serbia': 4.707,
+            'Tunisia': 4.875,
+            'Kenya': 4.032,
+            'United Arab Emirates': 3.998,
+            'Uruguay': 3.66,
+            'Yemen': 3.565,
+            'Zimbabwe': 3.57,
+            'Laos': 3.493,
+            'Austria': 3.492,
+            'Guatemala': 3.324,
+            'Somalia': 3.298,
+            'Costa Rica': 3.194,
+            'Norway': 3.026,
+            'Armenia': 2.847,
+            'Lithuania': 2.768,
+            'Sweden': 2.689,
+            'Paraguay': 2.413,
+            'Cambodia': 2.184,
+            'Senegal': 2.221,
+            'El Salvador': 2.118,
+            'Bolivia': 2.088,
+            'Switzerland': 2.005,
+            'Israel': 1.954,
+            'Lebanon': 1.84,
+            'Georgia': 1.823,
+            'Estonia': 1.72,
+            'Niger': 1.747,
+            'Honduras': 1.607,
+            'Zambia': 1.572,
+            'Nicaragua': 1.545,
+            'Mozambique': 1.473,
+            'Guyana': 1.445,
+            'Haiti': 1.45,
+            'Belarus': 1.452,
+            'Malawi': 1.357,
+            'Jamaica': 1.354,
+            'Mauritania': 1.35,
+            'Albania': 1.311,
+            'Oman': 1.321,
+            'Panama': 1.211,
+            'Timor-Leste': 1.172,
+            'Côte d\'Ivoire': 1.162,
+            'Moldova': 1.065,
+            'Jordan': 1.044,
+            'Eswatini': 1.042,
+            'Ghana': 0.982,
+            'Cameroon': 0.9664,
+            'Kuwait': 0.9132,
+            'Slovenia': 0.8873,
+            'Chad': 0.8796,
+            'Burkina Faso': 0.818,
+            'Barbados': 0.081,
+            'Ireland': 0.757,
+            'Mauritius': 0.725,
+            'Angola': 0.7058,
+            'Democratic Republic of the Congo': 0.6836,
+            'Dem. Rep. Congo': 0.6836,
+            'Congo (Kinshasa)': 0.6836,
+            'DR Congo': 0.6836,
+            'Croatia': 0.6338,
+            'Uganda': 0.637,
+            'Suriname': 0.6159,
+            'Eritrea': 0.582,
+            'Guinea': 0.5533,
+            'North Macedonia': 0.5512,
+            'Slovakia': 0.535,
+            'Gambia': 0.0905,
+            'Mongolia': 0.4624,
+            'Bahrain': 0.4344,
+            'Papua New Guinea': 0.3921,
+            'Trinidad and Tobago': 0.3832,
+            'Palestine': 0.3636,
+            'Bhutan': 0.338,
+            'Bosnia and Herzegovina': 0.3279,
+            'Cyprus': 0.317,
+            'Burundi': 0.288,
+            'Namibia': 0.288,
+            'Iceland': 0.2783,
+            'Latvia': 0.2244,
+            'Sierra Leone': 0.2122,
+            'Botswana': 0.2013,
+            'Singapore': 0.19,
+            'Guinea-Bissau': 0.175,
+            'Togo': 0.169,
+            'Montenegro': 0.1609,
+            'Rwanda': 0.15,
+            'Gabon': 0.1391,
+            'Liberia': 0.1308,
+            'Benin': 0.13,
+            'Brunei': 0.092,
+            'Fiji': 0.0849,
+            'Belize': 0.101,
+            'Central African Republic': 0.0725,
+            'Malta': 0.0628,
+            'Republic of the Congo': 0.046,
+            'Congo': 0.046,
+            'Congo (Brazzaville)': 0.046,
+            'Luxembourg': 0.044,
+            'Lesotho': 0.0438,
+            'Saint Lucia': 0.0429,
+            'Sao Tome and Principe': 0.0409,
+            'Cape Verde': 0.022,
+            'Cabo Verde': 0.022,
+            'Djibouti': 0.019,
+            'Equatorial Guinea': 0.0174,
+            'Saint Kitts and Nevis': 0.0156,
+            'Grenada': 0.0141,
+            'Seychelles': 0.0137,
+            'Antigua and Barbuda': 0.0115,
+            'Comoros': 0.01,
+            'Saint Vincent and the Grenadines': 0.0085,
+            'Maldives': 0.0059,
+            'Monaco': 0.005,
+            'Dominica': 0.02
+        };
+
+        const containerWidth = window.innerWidth;
+        const containerHeight = window.innerHeight;
+
+        // Function to get water consumption value
+        const getWaterConsumption = (feat) => {
+            const countryName = feat.properties.NAME || feat.properties.ADMIN;
+            return waterData[countryName] || 0;
+        };
+
+        // Custom color function with logarithmic scaling for better differentiation
+        const getColor = (value) => {
+            if (value === 0) return '#1a1a1a'; // Dark grey for no data
+            
+            // Logarithmic scaling for better distribution
+            const logValue = Math.log(value + 1);
+            const maxLog = Math.log(761 + 1); // India's max value
+            const normalized = logValue / maxLog;
+            
+            // Color thresholds with more dramatic differences
+            if (normalized < 0.1) return '#eff3ff'; // Very light blue
+            if (normalized < 0.25) return '#c6dbef'; // Light blue
+            if (normalized < 0.5) return '#9ecae1'; // Medium light blue
+            if (normalized < 0.7) return '#6baed6'; // Medium blue
+            if (normalized < 0.85) return '#3182bd'; // Dark blue
+            return '#08519c'; // Very dark blue
+        };
+
+        // Load country data and create globe
+        fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+            .then(res => res.json())
+            .then(countries => {
+                // Create globe
+                const world = Globe()
+                    .width(containerWidth)
+                    .height(containerHeight)
+                    (document.getElementById('globeViz'))
+                    .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+                    .polygonsData(countries.features)
+                    .polygonAltitude(0.02)
+                    .polygonCapColor(feat => {
+                        const value = getWaterConsumption(feat);
+                        return getColor(value);
+                    })
+                    .polygonSideColor(() => 'rgba(0, 50, 100, 0.15)')
+                    .polygonStrokeColor(() => '#000000');
+
+                // Add interactions
+                world.polygonLabel(({ properties: d }) => {
+                    const consumption = getWaterConsumption({ properties: d });
+                    return `
+                        <div style="font-family: 'Yu Gothic', sans-serif; font-size: 12px; color: #ffffff; background: rgba(0,0,0,0.9); padding: 10px; border-radius: 4px; border: 1px solid #ffffff;">
+                            <b style="font-family: 'DIN Condensed', sans-serif; font-size: 14px;">${d.NAME || d.ADMIN}</b><br/>
+                            Water Consumption: <b>${consumption.toFixed(2)}</b> billion m³
+                        </div>
+                    `;
+                })
+                .onPolygonHover(hoverD => world
+                    .polygonAltitude(d => d === hoverD ? 0.15 : 0.02)
+                    .polygonCapColor(d => {
+                        const value = getWaterConsumption(d);
+                        if (d === hoverD) return '#ffffff';
+                        return getColor(value);
+                    })
+                )
+                .polygonsTransitionDuration(300);
+
+                // Auto-rotation
+                world.controls().autoRotate = true;
+                world.controls().autoRotateSpeed = 0.3;
+
+                // Hide loading and show content
+                document.getElementById('loading').style.display = 'none';
+                animateIntro();
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerHTML = '<div class="loading-title">ERROR LOADING DATA</div>';
+            });
+
+        // Intro animation
+        function animateIntro() {
+            const tl = gsap.timeline();
+            
+            tl.to('.title', { opacity: 1, duration: 1.5, ease: 'power2.out' })
+              .to('.subtitle', { opacity: 1, duration: 1, ease: 'power2.out' }, '-=1')
+              .to('.legend', { opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.5')
+              .to('.data-info', { opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.5');
+        }
+
+        // Responsive handling
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+            if (window.globe) {
+                window.globe.width(newWidth).height(newHeight);
+            }
+        });
+    </script>
+</body>
+</html>
