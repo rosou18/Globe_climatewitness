@@ -1,0 +1,560 @@
+// I acknowledge the use of Claude to improve this code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Investigation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DIN+Condensed&family=Yu+Gothic:wght@300;400&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Yu Gothic', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .globe-section {
+            width: 65vw;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1;
+        }
+
+        #globeViz {
+            width: 100%;
+            height: 100%;
+        }
+
+        .text-section {
+            width: 35vw;
+            margin-left: 65vw;
+            background: #000;
+            z-index: 10;
+            position: relative;
+        }
+
+        .scroll-content {
+            height: 1000vh;
+        }
+
+        .hero-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 2rem;
+            text-align: center;
+            width: 100vw;
+            margin-left: -65vw;
+        }
+
+        .hero-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4rem;
+            letter-spacing: 5px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #666;
+            text-align: center;
+        }
+
+        .scroll-arrow {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            animation: bounce 2s infinite;
+            color: #666;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        .timeline-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 2rem;
+            border-left: 1px solid #333;
+        }
+
+        .text-box {
+            width: 100%;
+            max-width: 400px;
+            background: #000;
+            border: 1px solid #fff;
+            padding: 2rem;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .chapter {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .title {
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .event-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            font-family: 'Yu Gothic', sans-serif;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #ccc;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-btn {
+            background: #fff;
+            border: 1px solid #000;
+            color: #000;
+            padding: 0.8rem 1.5rem;
+            font-family: 'DIN Condensed', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            width: 100%;
+            margin: 0.5rem 0;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            background: #000;
+            color: #fff;
+            border: 1px solid #fff;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: row;
+            gap: 0.8rem;
+        }
+
+        .button-group .nav-btn {
+            flex: 1;
+        }
+    </style>
+
+    <script src="//cdn.jsdelivr.net/npm/globe.gl"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="globe-section">
+            <div id="globeViz"></div>
+        </div>
+
+        <div class="text-section">
+            <div class="scroll-content">
+                <div class="hero-section">
+                    <div>
+                        <div class="hero-title">CLIMATE WITNESS</div>
+                        <div class="hero-subtitle">by Rose Kessler</div>
+                        <div class="scroll-arrow">↓</div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-0">
+                        <div class="chapter">Climate Investigation</div>
+                        <div class="title">HELLO WORLD</div>
+                        <div class="event-title">The Bigger Picture</div>
+                        <div class="description">My name is Rose. I'm 21. Since I was born, the Earth has changed more than in any generation before — yet most of that change is invisible in daily life. This website invites you to take a step back — to compare two cities and map global inequalities. A 3D data story where innovation meets climate change.</div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-1">
+                        <div class="title">HYPERCONNECTED</div>
+                        <div class="event-title">World Wide Web</div>
+                        <div class="description">From space, there are no borders — and yet we're more divided than ever. Climate change and the rise of the far right loom as existential threats, globally connected through technology, media, and history.</div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-2">
+                        <div class="title">MAPPING INFORMATION</div>
+                        <div class="event-title">Open-Source Investigation</div>
+                        <div class="description">For this project, I used open-source investigation to learn new tools and uncover patterns. Mapping becomes a way to visualize the systems shaping our world.</div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-3">
+                        <div class="title">GLOBAL & LOCAL</div>
+                        <div class="event-title">Global Inequalities</div>
+                        <div class="description">Using datasets, I mapped two key indicators: water consumption and freedom of speech. These reflect the social and ecological inequalities defining our world today.</div>
+                        <div class="button-group">
+                            <button class="nav-btn" onclick="window.location.href='../globe_water_vsc/index.html'">Water Data</button>
+                            <button class="nav-btn" onclick="window.location.href='../Globe_press/index.html'">Press Freedom</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-4">
+                        <div class="title">A TALE OF TWO CITIES</div>
+                        <div class="event-title">7,927 Miles Apart</div>
+                        <div class="description">Las Vegas and Mandalay — two cities on opposite sides of the globe, living drastically different realities and evolutions.</div>
+                        <div class="button-group">
+                            <button class="nav-btn" onclick="window.location.href='../sat_evolution_vsc/index.html'">Compare Evolution</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-5">
+                        <div class="title">MYANMAR – MANDALAY</div>
+                        <div class="event-title">Constant Crisis</div>
+                        <div class="description">Recently hit by a 7.7 earthquake, Mandalay is a city already broken by military dictatorship, civil war, and genocide. There was no preparation. No safe infrastructure. Disaster here exposes deep systemic failure.</div>
+                        <div class="button-group">
+                            <button class="nav-btn" onclick="window.location.href='../Myanmar_sat_earthquake_vsc/index.html'">Earthquake Analysis</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-6">
+                        <div class="title">LAS VEGAS</div>
+                        <div class="event-title">The Vegas Paradox</div>
+                        <div class="description">A city that shouldn't exist — yet thrives. Las Vegas has grown rapidly across the desert while nearly halving its water use.</div>
+                    </div>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="text-box section-7">
+                        <div class="title">HOW DO WE GO FORWARD?</div>
+                        <div class="event-title">Systems Made Visible</div>
+                        <div class="description">With AI tools, the goal is to make abstract environmental data tangible, offering a new way to engage with the climate crisis. By revealing dramatic changes on both local and global scales, this story sparks conversations and new perspectives on human impact.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        let globe;
+        let currentMode = 'intro';
+
+        function initGlobe() {
+            globe = new Globe(document.getElementById('globeViz'))
+                .backgroundColor('rgba(0,0,0,1)')
+                .showAtmosphere(true)
+                .atmosphereColor('rgba(255,255,255,0.1)')
+                .pointOfView({ lat: 15, lng: 25, altitude: 2.2 }, 0)
+                .width(document.querySelector('.globe-section').offsetWidth)
+                .height(document.querySelector('.globe-section').offsetHeight)
+                .enablePointerInteraction(false);
+
+            globe.controls().autoRotate = true;
+            globe.controls().autoRotateSpeed = 0.3;
+            globe.controls().enableZoom = false;
+            globe.controls().enablePan = false;
+
+            setGlobeMode('intro');
+            setupScrollAnimations();
+        }
+
+        function setGlobeMode(mode) {
+            currentMode = mode;
+
+            globe.ringsData([])
+                 .htmlElementsData([])
+                 .polygonsData([])
+                 .pathsData([])
+                 .pointsData([])
+                 .particlesData([]);
+
+            switch(mode) {
+                case 'intro':
+                    createIntroMode();
+                    break;
+                case 'hyperconnected':
+                    createHyperconnectedMode();
+                    break;
+                case 'mapping':
+                    createMappingMode();
+                    break;
+                case 'inequalities':
+                    createInequalitiesMode();
+                    break;
+                case 'comparison':
+                    createComparisonMode();
+                    break;
+                case 'myanmar':
+                    createMyanmarMode();
+                    break;
+                case 'vegas':
+                    createVegasMode();
+                    break;
+                case 'conclusion':
+                    createConclusionMode();
+                    break;
+            }
+        }
+
+        function createIntroMode() {
+            globe.globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+                 .showGlobe(true)
+                 .showAtmosphere(true)
+                 .pointOfView({ lat: 15, lng: 25, altitude: 2.2 }, 1000);
+        }
+
+        function createHyperconnectedMode() {
+            globe.globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+                 .showGlobe(true)
+                 .showAtmosphere(true);
+
+            const globalRings = [
+                { lat: 90, lng: 0, maxR: 180, speed: 20, period: 200 }
+            ];
+
+            globe.ringsData(globalRings)
+                 .ringAltitude(0.05)
+                 .ringColor(() => 'rgba(100, 200, 255, 0.6)')
+                 .ringMaxRadius('maxR')
+                 .ringPropagationSpeed('speed')
+                 .ringRepeatPeriod('period');
+        }
+
+        function createMappingMode() {
+            globe.showGlobe(false)
+                 .showAtmosphere(false);
+
+            fetch('//cdn.jsdelivr.net/npm/world-atlas/land-110m.json')
+                .then(res => res.json())
+                .then(landTopo => {
+                    const countries = topojson.feature(landTopo, landTopo.objects.land).features;
+                    globe.polygonsData(countries)
+                         .polygonCapColor(() => 'rgba(200, 200, 200, 0.3)')
+                         .polygonSideColor(() => 'rgba(255,255,255,0.1)')
+                         .polygonStrokeColor(() => 'rgba(255,255,255,0.4)');
+                });
+        }
+
+        function createInequalitiesMode() {
+            globe.showGlobe(false)
+                 .showAtmosphere(false);
+
+            fetch('//cdn.jsdelivr.net/npm/world-atlas/land-110m.json')
+                .then(res => res.json())
+                .then(landTopo => {
+                    const countries = topojson.feature(landTopo, landTopo.objects.land).features;
+                    const colors = [
+                        '#81c784', '#4fc3f7', '#ba68c8', '#ffb74d', 
+                        '#f06292', '#64b5f6', '#aed581', '#ff8a65'
+                    ];
+                    
+                    globe.polygonsData(countries)
+                         .polygonAltitude(0.02)
+                         .polygonCapColor(() => colors[Math.floor(Math.random() * colors.length)])
+                         .polygonSideColor(() => 'rgba(255,255,255,0.3)')
+                         .polygonStrokeColor(() => 'rgba(255,255,255,0.9)');
+                });
+        }
+
+        function createComparisonMode() {
+            globe.globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+                 .showGlobe(true)
+                 .showAtmosphere(true);
+
+            const ripples = [
+                { lat: 36.1699, lng: -115.1398, maxR: 12, speed: 1.2, period: 800 },
+                { lat: 21.9162, lng: 95.9560, maxR: 15, speed: 1.2, period: 800 }
+            ];
+
+            globe.ringsData(ripples)
+                 .ringAltitude(0.001)
+                 .ringColor((d) => d.lat > 30 ? 'rgba(0,255,150,0.6)' : 'rgba(255,50,50,0.6)')
+                 .ringMaxRadius('maxR')
+                 .ringPropagationSpeed('speed')
+                 .ringRepeatPeriod('period');
+
+            const locations = [
+                { lat: 36.1699, lng: -115.1398, name: 'Las Vegas' },
+                { lat: 21.9162, lng: 95.9560, name: 'Mandalay' }
+            ];
+
+            globe.htmlElementsData(locations)
+                 .htmlElement(d => {
+                     const el = document.createElement('div');
+                     el.textContent = d.name;
+                     el.style.fontFamily = 'DIN Condensed, sans-serif';
+                     el.style.fontSize = '10px';
+                     el.style.color = '#ffffff';
+                     el.style.background = 'rgba(0,0,0,0.8)';
+                     el.style.padding = '2px 6px';
+                     el.style.border = '1px solid #fff';
+                     return el;
+                 });
+        }
+
+        function createMyanmarMode() {
+            globe.globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+                 .showGlobe(true)
+                 .showAtmosphere(true)
+                 .pointOfView({ lat: 21.9162, lng: 95.9560, altitude: 1.5 }, 1000);
+
+            const myanmarRipples = [
+                { lat: 21.9162, lng: 95.9560, maxR: 30, speed: 12, period: 600 }
+            ];
+
+            globe.ringsData(myanmarRipples)
+                 .ringAltitude(0.001)
+                 .ringColor(() => 'rgba(255, 50, 50, 0.7)')
+                 .ringMaxRadius('maxR')
+                 .ringPropagationSpeed('speed')
+                 .ringRepeatPeriod('period');
+        }
+
+        function createVegasMode() {
+            globe.globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+                 .showGlobe(true)
+                 .showAtmosphere(true)
+                 .pointOfView({ lat: 36.1699, lng: -115.1398, altitude: 1.5 }, 1000);
+
+            const vegasRipples = [
+                { lat: 36.1699, lng: -115.1398, maxR: 25, speed: 1.5, period: 700 }
+            ];
+
+            globe.ringsData(vegasRipples)
+                 .ringAltitude(0.001)
+                 .ringColor(() => 'rgba(0, 255, 150, 0.7)')
+                 .ringMaxRadius('maxR')
+                 .ringPropagationSpeed('speed')
+                 .ringRepeatPeriod('period');
+        }
+
+        function createConclusionMode() {
+            globe.globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+                 .showGlobe(true)
+                 .showAtmosphere(true);
+
+            let currentRotation = 0;
+            const rotateInterval = setInterval(() => {
+                currentRotation += 2;
+                globe.pointOfView({ 
+                    lat: 15, 
+                    lng: 25 + currentRotation, 
+                    altitude: 2.2 + (currentRotation * 0.01) 
+                }, 100);
+                
+                if (currentRotation >= 720) {
+                    clearInterval(rotateInterval);
+                    globe.pointOfView({ lat: 15, lng: 25, altitude: 4.0 }, 3000);
+                }
+            }, 50);
+        }
+
+        function setupScrollAnimations() {
+            ScrollTrigger.create({
+                trigger: ".scroll-content",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: (self) => {
+                    const progress = self.progress;
+                    let newMode;
+
+                    if (progress < 0.1) {
+                        newMode = 'intro';
+                    } else if (progress < 0.2) {
+                        newMode = 'intro';
+                    } else if (progress < 0.3) {
+                        newMode = 'hyperconnected';
+                    } else if (progress < 0.4) {
+                        newMode = 'mapping';
+                    } else if (progress < 0.5) {
+                        newMode = 'inequalities';
+                    } else if (progress < 0.6) {
+                        newMode = 'comparison';
+                    } else if (progress < 0.7) {
+                        newMode = 'myanmar';
+                    } else if (progress < 0.8) {
+                        newMode = 'vegas';
+                    } else {
+                        newMode = 'conclusion';
+                    }
+
+                    if (newMode !== currentMode) {
+                        setGlobeMode(newMode);
+                    }
+                }
+            });
+
+            document.querySelectorAll('.text-box').forEach((box) => {
+                ScrollTrigger.create({
+                    trigger: box.parentElement,
+                    start: "top 70%",
+                    end: "bottom 30%",
+                    onEnter: () => gsap.to(box, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }),
+                    onLeave: () => gsap.to(box, { opacity: 0, y: 30, duration: 0.5, ease: "power2.in" }),
+                    onEnterBack: () => gsap.to(box, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }),
+                    onLeaveBack: () => gsap.to(box, { opacity: 0, y: 30, duration: 0.5, ease: "power2.in" })
+                });
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            const globeSection = document.querySelector('.globe-section');
+            globe.width(globeSection.offsetWidth).height(globeSection.offsetHeight);
+        });
+
+        window.addEventListener('load', () => {
+            initGlobe();
+        });
+    </script>
+</body>
+</html>
